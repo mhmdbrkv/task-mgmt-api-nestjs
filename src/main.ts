@@ -9,8 +9,16 @@ async function bootstrap() {
   const config = app.get(ConfigService);
   const port = config.get<number>('port') ?? 3000;
 
+  // Enable CORS
+  app.enableCors({
+    origin: '*',
+    credentials: true,
+  });
+
+  // Set global prefix
   app.setGlobalPrefix('api');
 
+  // Start the server
   await app.listen(port);
 
   console.log(`🚀 Application is running on: ${await app.getUrl()}`);
