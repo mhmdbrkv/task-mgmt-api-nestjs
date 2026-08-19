@@ -11,6 +11,8 @@ import { AppService } from './app.service';
 
 // Feature Modules
 import { TasksModule } from './tasks/tasks.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { TasksModule } from './tasks/tasks.module';
       },
     }),
     TasksModule,
+    AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

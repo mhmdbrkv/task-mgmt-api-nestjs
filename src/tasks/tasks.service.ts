@@ -9,7 +9,7 @@ export class TasksService {
 
   create(createTaskDto: CreateTaskDto) {
     const task: Task = {
-      id: this.tasks.length + 1,
+      id: crypto.randomUUID(),
       ...createTaskDto,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -22,13 +22,13 @@ export class TasksService {
     return this.tasks ?? [];
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     const task = this.tasks.find((task) => task.id === id);
     if (!task) throw new NotFoundException(`Task #${id} not found`);
     return task;
   }
 
-  update(id: number, updateTaskDto: UpdateTaskDto) {
+  update(id: string, updateTaskDto: UpdateTaskDto) {
     const task = this.findOne(id);
 
     if (!task) throw new NotFoundException(`Task #${id} not found`);
@@ -37,7 +37,7 @@ export class TasksService {
     return task;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     const task = this.findOne(id);
 
     if (!task) throw new NotFoundException(`Task #${id} not found`);

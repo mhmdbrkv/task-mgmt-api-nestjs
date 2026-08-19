@@ -2,7 +2,6 @@ import {
   IsNotEmpty,
   IsString,
   IsOptional,
-  IsNumber,
   MinLength,
   MaxLength,
 } from 'class-validator';
@@ -20,11 +19,11 @@ export class CreateTaskDto {
   @MaxLength(256)
   readonly description: string;
 
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  readonly owner_id: number;
+  readonly owner_id: string;
 
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  readonly project_id: number;
+  readonly project_id: string;
 }
