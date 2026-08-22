@@ -6,6 +6,8 @@ import {
   MaxLength,
 } from 'class-validator';
 
+import { RoleEnum } from 'src/enums/user-role.enum';
+
 export class RegisterAuthDto {
   @IsString()
   @IsNotEmpty()
@@ -25,5 +27,5 @@ export class RegisterAuthDto {
 
   @IsString()
   @IsNotEmpty()
-  readonly role!: 'user' | 'admin';
+  readonly role!: RoleEnum;
 }

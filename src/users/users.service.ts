@@ -2,10 +2,21 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
+import { RoleEnum } from 'src/enums/user-role.enum';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
+  private users: User[] = [
+    {
+      id: '1',
+      name: 'John Doe',
+      email: 'RyPnM@example.com',
+      password: 'password',
+      role: RoleEnum.USER,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  ];
 
   create(createUserDto: CreateUserDto) {
     const user: User = {
@@ -25,6 +36,12 @@ export class UsersService {
   findOne(id: string) {
     const user = this.users.find((user) => user.id === id);
     if (!user) throw new NotFoundException(`User #${id} not found`);
+    return user;
+  }
+
+  findUserByEmail(email: string) {
+    const user = this.users.find((user) => user.email === email);
+    if (!user) return null;
     return user;
   }
 

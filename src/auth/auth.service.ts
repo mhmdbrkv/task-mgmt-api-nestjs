@@ -1,54 +1,81 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { User } from 'src/auth/entities/user.entity';
+import { UsersService } from 'src/users/users.service';
+import { JwtService } from '@nestjs/jwt';
+import type { Response } from 'express';
+
+type returnType =
+  | {
+      status: true;
+      payload: User;
+    }
+  | {
+      status: false;
+      message: string;
+    };
 
 @Injectable()
 export class AuthService {
-  private users: User[] = [];
+  constructor(
+    private userService: UsersService,
+    private jwtService: JwtService,
+  ) {}
+
+  validateUser(email: string, password: string): returnType {
+    const user = this.userService.findUserByEmail(email);
+    if (!user || user.password !== password)
+      return { status: false, message: 'Invalid credentials!' };
+    else return { status: true, payload: user };
+  }
 
   register(registerAuthDto: RegisterAuthDto) {
     // extract user data
     const { name, email, password, role } = registerAuthDto;
     // check if user already exists
-    const userExists = this.users.find((user) => user.email === email);
+    const userExists = this.userService.findUserByEmail(email);
     if (userExists) {
       throw new ConflictException('User already exists');
     }
     // create user if not exists
-    const user: User = {
-      id: crypto.randomUUID(),
+    const user = this.userService.create({
       name,
       email,
       password,
       role,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.users.push(user);
-    // generate token
+    });
+
     // return user
     return user;
   }
 
-  login(loginAuthDto: LoginAuthDto) {
+  async login(loginAuthDto: LoginAuthDto, res: Response) {
     // extract user data
     const { email, password } = loginAuthDto;
-    // find user by email
-    const user = this.users.find((user) => user.email === email);
-    if (!user) {
-      throw new ConflictException('Invalid Credentials');
-    }
-    // check if password is correct
-    if (user.password !== password) {
-      throw new ConflictException('Invalid Credentials');
-    }
-    // generate token
-    // return user
-    return user;
-  }
+    // validate user
+    const user = this.validateUser(email, password);
+    if (!user.status) return res.status(401).json(user.message);
 
-  findAll() {
-    return this.users;
+    // generate token
+    const payload = {
+      sub: user.payload.id,
+      name: user.payload.name,
+      role: user.payload.role,
+    };
+
+    const access_token = await this.jwtService.signAsync(payload);
+
+    // return user
+    return res.status(200).json({
+      message: 'Login successful!',
+      access_token,
+      user: {
+        id: user.payload.id,
+        name: user.payload.name,
+        email: user.payload.email,
+        role: user.payload.role,
+      },
+    });
   }
 }
