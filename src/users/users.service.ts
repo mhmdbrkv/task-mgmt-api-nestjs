@@ -2,26 +2,22 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
-import { RoleEnum } from 'src/enums/user-role.enum';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'RyPnM@example.com',
-      password: 'password',
-      role: RoleEnum.USER,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ];
+  private users: User[] = [];
 
-  create(createUserDto: CreateUserDto) {
+  private async hashString(str: string): Promise<string> {
+    const saltRounds = 10;
+    return await bcrypt.hash(str, saltRounds);
+  }
+
+  async create(createUserDto: CreateUserDto) {
     const user: User = {
       id: crypto.randomUUID(),
       ...createUserDto,
+      password: await this.hashString(createUserDto.password),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -39,7 +35,7 @@ export class UsersService {
     return user;
   }
 
-  findUserByEmail(email: string) {
+  async findUserByEmail(email: string) {
     const user = this.users.find((user) => user.email === email);
     if (!user) return null;
     return user;

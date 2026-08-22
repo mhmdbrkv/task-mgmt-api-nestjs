@@ -8,6 +8,7 @@ import { LoginAuthDto } from './dto/login-auth.dto';
 import { User } from 'src/auth/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 
 type returnType =
   | {
@@ -31,9 +32,17 @@ export class AuthService {
     password: string,
   ): Promise<returnType> {
     const user = await this.userService.findUserByEmail(email);
-    if (!user || user.password !== password)
+    if (!user || !(await this.compareWithHashString(password, user.password)))
       return { status: false, message: 'Invalid credentials!' };
     return { status: true, payload: user };
+  }
+
+  private async compareWithHashString(
+    plainStr: string,
+    hashedStr: string,
+  ): Promise<boolean> {
+    const isMatch = await bcrypt.compare(plainStr, hashedStr);
+    return isMatch;
   }
 
   private async generateToken({ id, name, role }: User) {
