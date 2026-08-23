@@ -1,12 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { RoleEnum } from 'src/enums/user-role.enum';
+import { UserRole } from '../../generated/prisma/client';
+import { SkipAuthGuard } from 'src/guard/skip-auth.guard';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
+  constructor(private readonly prisma: PrismaService) {}
 
   private async hashString(str: string): Promise<string> {
     const saltRounds = 10;
@@ -14,48 +17,83 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto) {
-    const user: User = {
-      id: crypto.randomUUID(),
-      ...createUserDto,
-      password: await this.hashString(createUserDto.password),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    const user = await this.prisma.user.create({
+      data: {
+        ...createUserDto,
+        role: createUserDto.role.toUpperCase() as UserRole,
+        password: await this.hashString(createUserDto.password),
+      },
+    });
+    return {
+      ...user,
+      role: user.role.toLowerCase() as RoleEnum,
     };
-    this.users.push(user);
-    return user;
   }
 
-  findAll() {
-    return this.users ?? [];
+  async findAll() {
+    const users = await this.prisma.user.findMany();
+    return users.map((user) => ({
+      ...user,
+      role: user.role.toLowerCase() as RoleEnum,
+    }));
   }
 
-  findOne(id: string) {
-    const user = this.users.find((user) => user.id === id);
+  async findOne(id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException(`User #${id} not found`);
-    return user;
+    return {
+      ...user,
+      role: user.role.toLowerCase() as RoleEnum,
+    };
   }
 
   async findUserByEmail(email: string) {
-    const user = this.users.find((user) => user.email === email);
+    const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) return null;
-    return user;
+    return {
+      ...user,
+      role: user.role.toLowerCase() as RoleEnum,
+    };
   }
 
-  update(id: string, updateUserDto: UpdateUserDto) {
-    const user = this.findOne(id);
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.findOne(id);
 
     if (!user) throw new NotFoundException(`User #${id} not found`);
 
-    Object.assign(user, updateUserDto, { updatedAt: new Date() });
-    return user;
+    const { password, role, ...rest } = updateUserDto;
+    const updateData: any = { ...rest };
+
+    if (password) {
+      updateData.password = await this.hashString(password);
+    } else {
+      updateData.password = user.password;
+    }
+
+    if (role) {
+      updateData.role = role.toUpperCase() as UserRole;
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: {
+        ...updateData,
+        updatedAt: new Date(),
+      },
+    });
+
+    return {
+      ...updated,
+      role: updated.role.toLowerCase() as RoleEnum,
+    };
   }
 
-  remove(id: string) {
-    const user = this.findOne(id);
+  async remove(id: string) {
+    const user = await this.findOne(id);
 
     if (!user) throw new NotFoundException(`User #${id} not found`);
 
-    this.users = this.users.filter((t) => t.id !== id);
+    await this.prisma.user.delete({ where: { id } });
     return user;
   }
 }

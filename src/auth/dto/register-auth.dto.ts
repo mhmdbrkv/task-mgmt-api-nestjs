@@ -4,6 +4,7 @@ import {
   IsEmail,
   MinLength,
   MaxLength,
+  IsEnum,
 } from 'class-validator';
 
 import { RoleEnum } from 'src/enums/user-role.enum';
@@ -25,7 +26,7 @@ export class RegisterAuthDto {
   @MinLength(8)
   readonly password!: string;
 
-  @IsString()
+  @IsEnum(RoleEnum)
   @IsNotEmpty()
   readonly role!: RoleEnum;
 }

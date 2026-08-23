@@ -13,6 +13,7 @@ import { AppService } from './app.service';
 import { TasksModule } from './tasks/tasks.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { UsersModule } from './users/users.module';
         abortEarly: true,
       },
     }),
+    PrismaModule,
     TasksModule,
     AuthModule,
     UsersModule,
