@@ -9,7 +9,7 @@ import {
 
 import { RoleEnum } from 'src/enums/user-role.enum';
 
-export class RegisterAuthDto {
+export class RegisterDto {
   @IsString()
   @IsNotEmpty()
   @MinLength(2)

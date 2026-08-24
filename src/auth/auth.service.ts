@@ -3,12 +3,13 @@ import {
   ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { RegisterAuthDto } from './dto/register-auth.dto';
-import { LoginAuthDto } from './dto/login-auth.dto';
-import { User } from 'src/auth/entities/user.entity';
-import { UsersService } from 'src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
+import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcrypt';
+
+import { User } from 'src/auth/entities/user.entity';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
 type returnType =
   | {
@@ -56,9 +57,9 @@ export class AuthService {
     return this.jwtService.signAsync(payload);
   }
 
-  async register(registerAuthDto: RegisterAuthDto) {
+  async register(registerDto: RegisterDto) {
     // extract user data
-    const { name, email, password, role } = registerAuthDto;
+    const { name, email, password, role } = registerDto;
     // check if user already exists
     const userExists = await this.userService.findUserByEmail(email);
     if (userExists) throw new ConflictException('User already exists');
@@ -86,9 +87,9 @@ export class AuthService {
     };
   }
 
-  async login(loginAuthDto: LoginAuthDto) {
+  async login(loginDto: LoginDto) {
     // extract user data
-    const { email, password } = loginAuthDto;
+    const { email, password } = loginDto;
     // validate user
     const user = await this.validateUser(email, password);
     if (!user.status) throw new UnauthorizedException(user.message);
