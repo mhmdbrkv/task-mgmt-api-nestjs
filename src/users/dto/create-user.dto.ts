@@ -7,7 +7,7 @@ import {
   IsEnum,
 } from 'class-validator';
 
-import { RoleEnum } from 'src/enums/user-role.enum';
+import { UserRole } from 'src/enums/user-role.enum';
 
 export class CreateUserDto {
   @IsString()
@@ -26,7 +26,7 @@ export class CreateUserDto {
   @MinLength(8)
   readonly password!: string;
 
-  @IsEnum(RoleEnum)
+  @IsEnum(UserRole)
   @IsNotEmpty()
-  readonly role!: RoleEnum;
+  readonly role!: UserRole;
 }

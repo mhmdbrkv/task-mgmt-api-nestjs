@@ -6,10 +6,16 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { SkipAuthGuard } from 'src/guard/skip-auth.guard';
+import { RbacGuard } from 'src/guard/rbac.guard';
+import { Roles } from 'src/guard/roles';
+import { UserRole } from 'src/enums/user-role.enum';
+
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -20,6 +26,8 @@ export class UsersController {
   }
 
   @Get()
+  @UseGuards(RbacGuard)
+  @Roles(UserRole.USER)
   findAll() {
     return this.usersService.findAll();
   }

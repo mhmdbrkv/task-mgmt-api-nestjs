@@ -3,9 +3,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { RoleEnum } from 'src/enums/user-role.enum';
-import { UserRole } from '../../generated/prisma/client';
-import { SkipAuthGuard } from 'src/guard/skip-auth.guard';
+import { UserRole } from 'src/enums/user-role.enum';
 
 @Injectable()
 export class UsersService {
@@ -20,40 +18,27 @@ export class UsersService {
     const user = await this.prisma.user.create({
       data: {
         ...createUserDto,
-        role: createUserDto.role.toUpperCase() as UserRole,
         password: await this.hashString(createUserDto.password),
       },
     });
-    return {
-      ...user,
-      role: user.role.toLowerCase() as RoleEnum,
-    };
+    return user;
   }
 
   async findAll() {
     const users = await this.prisma.user.findMany();
-    return users.map((user) => ({
-      ...user,
-      role: user.role.toLowerCase() as RoleEnum,
-    }));
+    return users;
   }
 
   async findOne(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException(`User #${id} not found`);
-    return {
-      ...user,
-      role: user.role.toLowerCase() as RoleEnum,
-    };
+    return user;
   }
 
   async findUserByEmail(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user) return null;
-    return {
-      ...user,
-      role: user.role.toLowerCase() as RoleEnum,
-    };
+    return user;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
@@ -61,17 +46,13 @@ export class UsersService {
 
     if (!user) throw new NotFoundException(`User #${id} not found`);
 
-    const { password, role, ...rest } = updateUserDto;
+    const { password, ...rest } = updateUserDto;
     const updateData: any = { ...rest };
 
     if (password) {
       updateData.password = await this.hashString(password);
     } else {
       updateData.password = user.password;
-    }
-
-    if (role) {
-      updateData.role = role.toUpperCase() as UserRole;
     }
 
     const updated = await this.prisma.user.update({
@@ -82,10 +63,7 @@ export class UsersService {
       },
     });
 
-    return {
-      ...updated,
-      role: updated.role.toLowerCase() as RoleEnum,
-    };
+    return updated;
   }
 
   async remove(id: string) {
