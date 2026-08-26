@@ -2,7 +2,7 @@ import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { SkipAuthGuard } from 'src/guard/skip-auth.guard';
+import { SkipAuthGuard } from '../common/decorators/skip-auth.decorator';
 
 @Controller('auth')
 @SkipAuthGuard()

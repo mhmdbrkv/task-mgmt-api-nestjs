@@ -11,10 +11,10 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { SkipAuthGuard } from 'src/guard/skip-auth.guard';
-import { RbacGuard } from 'src/guard/rbac.guard';
-import { Roles } from 'src/guard/roles';
-import { UserRole } from 'src/enums/user-role.enum';
+import { SkipAuthGuard } from '../common/decorators/skip-auth.decorator';
+import { RbacGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { UserRole } from '../common/enums/user-role.enum';
 
 @Controller('users')
 export class UsersController {

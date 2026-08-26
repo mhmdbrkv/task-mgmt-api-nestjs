@@ -4,8 +4,8 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { UsersModule } from 'src/users/users.module';
-import { JwtAuthGuard } from 'src/guard/jwt-auth.guard';
+import { UsersModule } from '../users/users.module';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { SignOptions } from 'jsonwebtoken';
 
 @Module({
