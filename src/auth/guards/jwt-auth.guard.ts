@@ -16,11 +16,12 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const skipGuard = this.reflector.getAllAndOverride<boolean>(
-      'skipAuthGuard',
-      [context.getHandler(), context.getClass()],
-    );
-    if (skipGuard) {
+    const skipAuth = this.reflector.getAllAndOverride<boolean>('skipAuth', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (skipAuth) {
+      console.log('Skipping auth');
       return true;
     }
 
