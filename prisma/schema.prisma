@@ -22,9 +22,32 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relationships
+  // One user has many authentication sessions
+  sessions Session[]
 }
 
 enum UserRole {
   ADMIN
   USER
+}
+
+model Session {
+  id               String    @id @default(uuid())
+  refreshTokenHash String
+  userId           String
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relationships
+  // Many sessions belong to one user
+  // When a user is deleted, all their sessions are deleted
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  // Index for faster session lookups by user
+  @@index([userId])
 }
