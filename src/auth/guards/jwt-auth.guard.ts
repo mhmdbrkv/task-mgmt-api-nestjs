@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import { Reflector } from '@nestjs/core';
+import { SKIP_AUTH_KEY } from '../../common/decorators/skip-auth.decorator';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -16,7 +17,7 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const skipAuth = this.reflector.getAllAndOverride<boolean>('skipAuth', [
+    const skipAuth = this.reflector.getAllAndOverride<boolean>(SKIP_AUTH_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);

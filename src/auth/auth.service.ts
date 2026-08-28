@@ -109,7 +109,7 @@ export class AuthService {
     };
   }
 
-  async logout() {
+  logout() {
     return;
   }
 }

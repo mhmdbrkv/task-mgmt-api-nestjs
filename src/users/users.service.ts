@@ -3,7 +3,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { UserRole } from '../common/enums/user-role.enum';
 
 @Injectable()
 export class UsersService {
@@ -36,9 +35,7 @@ export class UsersService {
   }
 
   async findUserByEmail(email: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) return null;
-    return user;
+    return await this.prisma.user.findUnique({ where: { email } });
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
@@ -46,14 +43,7 @@ export class UsersService {
 
     if (!user) throw new NotFoundException(`User #${id} not found`);
 
-    const { password, ...rest } = updateUserDto;
-    const updateData: any = { ...rest };
-
-    if (password) {
-      updateData.password = await this.hashString(password);
-    } else {
-      updateData.password = user.password;
-    }
+    const { password, role, ...updateData } = updateUserDto;
 
     const updated = await this.prisma.user.update({
       where: { id },

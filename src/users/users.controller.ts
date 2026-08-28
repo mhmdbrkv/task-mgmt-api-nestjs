@@ -11,8 +11,7 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { SkipAuth } from '../common/decorators/skip-auth.decorator';
-import { RbacGuard } from '../auth/guards/roles.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/user-role.enum';
 
@@ -26,7 +25,7 @@ export class UsersController {
   }
 
   @Get()
-  @UseGuards(RbacGuard)
+  @UseGuards(RolesGuard)
   @Roles(UserRole.USER)
   findAll() {
     return this.usersService.findAll();
