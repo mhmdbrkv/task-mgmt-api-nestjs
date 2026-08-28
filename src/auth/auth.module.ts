@@ -5,11 +5,15 @@ import { AuthController } from './auth.controller';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from '../users/users.module';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { SignOptions } from 'jsonwebtoken';
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
+    PassportModule,
     JwtModule.registerAsync({
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('jwt.secret'),
@@ -26,9 +30,14 @@ import type { SignOptions } from 'jsonwebtoken';
   controllers: [AuthController],
   providers: [
     AuthService,
+    JwtStrategy,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

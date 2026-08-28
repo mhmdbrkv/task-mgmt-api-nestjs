@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 type returnType =
   | {
@@ -46,14 +47,13 @@ export class AuthService {
     return isMatch;
   }
 
-  private async generateToken({ id, name, role }: User) {
+  private async generateToken({ id, role }: User) {
     // generate token
-    const payload = {
+    const payload: JwtPayload = {
       sub: id,
-      name: name,
       role: role,
     };
-
+    // Return signed token
     return this.jwtService.signAsync(payload);
   }
 

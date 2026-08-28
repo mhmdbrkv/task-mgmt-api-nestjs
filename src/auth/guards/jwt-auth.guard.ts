@@ -1,47 +1,24 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import type { Request } from 'express';
+import { ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { SKIP_AUTH_KEY } from '../../common/decorators/skip-auth.decorator';
+import { AuthGuard } from '@nestjs/passport';
+import { IS_PUBLIC_KEY } from '../../common/decorators/skip-auth.decorator';
 
 @Injectable()
-export class JwtAuthGuard implements CanActivate {
-  constructor(
-    private readonly jwtService: JwtService,
-    private readonly reflector: Reflector,
-  ) {}
+export class JwtAuthGuard extends AuthGuard('jwt') {
+  constructor(private readonly reflector: Reflector) {
+    super();
+  }
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const skipAuth = this.reflector.getAllAndOverride<boolean>(SKIP_AUTH_KEY, [
+  canActivate(context: ExecutionContext) {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
-    if (skipAuth) {
-      console.log('Skipping auth');
+
+    if (isPublic) {
       return true;
     }
 
-    const request: Request = context.switchToHttp().getRequest();
-    const authHeader = request.headers['authorization'];
-
-    if (!authHeader) {
-      throw new UnauthorizedException();
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    try {
-      const decoded = await this.jwtService.verifyAsync(token);
-      request['user'] = decoded;
-    } catch (error) {
-      console.log(error);
-      throw new UnauthorizedException();
-    }
-    return true;
+    return super.canActivate(context);
   }
 }

@@ -6,14 +6,13 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { UserRole } from '../common/enums/user-role.enum';
+import { SkipAuth } from '../common/decorators/skip-auth.decorator';
 
 @Controller('users')
 export class UsersController {
@@ -25,8 +24,7 @@ export class UsersController {
   }
 
   @Get()
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.USER)
+  @Roles(UserRole.ADMIN, UserRole.USER)
   findAll() {
     return this.usersService.findAll();
   }
