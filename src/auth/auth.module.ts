@@ -10,16 +10,17 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 
 @Module({
   imports: [
     PassportModule,
     JwtModule.registerAsync({
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('jwt.secret'),
+        secret: config.getOrThrow<string>('jwt.secret'),
         signOptions: {
-          expiresIn: config.get<string>(
-            'jwt.expiresIn',
+          expiresIn: config.getOrThrow<string>(
+            'jwt.accessTokenExpiresIn',
           ) as SignOptions['expiresIn'],
         },
       }),
@@ -31,6 +32,7 @@ import { RolesGuard } from './guards/roles.guard';
   providers: [
     AuthService,
     JwtStrategy,
+    RefreshTokenStrategy,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

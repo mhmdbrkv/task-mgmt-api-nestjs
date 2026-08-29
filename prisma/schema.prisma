@@ -37,6 +37,7 @@ model Session {
   id               String    @id @default(uuid())
   refreshTokenHash String
   userId           String
+  familyId         String
   expiresAt        DateTime
   revokedAt        DateTime?
   createdAt        DateTime  @default(now())
@@ -47,7 +48,7 @@ model Session {
   // When a user is deleted, all their sessions are deleted
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Indexes
-  // Index for faster session lookups by user
+  // Indexes for faster session lookups
   @@index([userId])
+  @@index([familyId])
 }
