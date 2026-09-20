@@ -1,0 +1,50 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
+import { ProjectsService } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+
+@Controller('projects')
+export class ProjectsController {
+  constructor(private readonly projectsService: ProjectsService) {}
+
+  @Post()
+  create(
+    @Body() createProjectDto: CreateProjectDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectsService.create(createProjectDto, user.sub);
+  }
+
+  @Get()
+  findMyProjects(@CurrentUser() user: JwtPayload) {
+    return this.projectsService.findMyProjects(user.sub);
+  }
+
+  @Get(':projectId')
+  findOne(@Param('projectId') projectId: string) {
+    return this.projectsService.findOne(projectId);
+  }
+
+  @Patch(':projectId')
+  update(
+    @Param('projectId') projectId: string,
+    @Body() updateProjectDto: UpdateProjectDto,
+  ) {
+    return this.projectsService.update(projectId, updateProjectDto);
+  }
+
+  @Delete(':projectId')
+  remove(@Param('projectId') projectId: string) {
+    return this.projectsService.remove(projectId);
+  }
+}
