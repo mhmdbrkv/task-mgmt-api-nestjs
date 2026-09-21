@@ -26,25 +26,32 @@ export class ProjectsController {
   }
 
   @Get()
-  findMyProjects(@CurrentUser() user: JwtPayload) {
-    return this.projectsService.findMyProjects(user.sub);
+  findAll(@CurrentUser() user: JwtPayload) {
+    return this.projectsService.findAll(user.sub);
   }
 
   @Get(':projectId')
-  findOne(@Param('projectId') projectId: string) {
-    return this.projectsService.findOne(projectId);
+  findOne(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectsService.findOne(projectId, user.sub);
   }
 
   @Patch(':projectId')
   update(
     @Param('projectId') projectId: string,
     @Body() updateProjectDto: UpdateProjectDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.projectsService.update(projectId, updateProjectDto);
+    return this.projectsService.update(projectId, updateProjectDto, user.sub);
   }
 
   @Delete(':projectId')
-  remove(@Param('projectId') projectId: string) {
-    return this.projectsService.remove(projectId);
+  remove(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectsService.remove(projectId, user.sub);
   }
 }
