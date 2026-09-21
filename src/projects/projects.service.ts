@@ -13,8 +13,7 @@ export class ProjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createProjectDto: CreateProjectDto, ownerId: string) {
-    // start transaction
-    const newProject = await this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       // 1. create new project
       const project = await tx.project.create({
         data: {
@@ -24,7 +23,7 @@ export class ProjectsService {
       });
 
       // 2. create new project membership for the owner
-      const projectMembership = await tx.projectMembership.create({
+      const membership = await tx.projectMembership.create({
         data: {
           projectId: project.id,
           userId: ownerId,
@@ -32,14 +31,12 @@ export class ProjectsService {
         },
       });
 
-      return { project, projectMembership };
+      return { project, membership };
     });
-
-    return newProject;
   }
 
   async findAll(userId: string) {
-    const projects = await this.prisma.projectMembership.findMany({
+    return await this.prisma.projectMembership.findMany({
       where: {
         userId,
       },
@@ -48,27 +45,12 @@ export class ProjectsService {
         role: true,
       },
     });
-
-    return projects;
   }
 
   async findOne(projectId: string, userId: string) {
-    // fetch one project
-    const project = await this.prisma.projectMembership.findFirst({
-      where: {
-        projectId,
-        userId,
-      },
-      include: {
-        project: true,
-      },
-    });
-    // if project not found
-    if (!project) {
-      throw new NotFoundException(`Project with id ${projectId} not found`);
-    }
+    const membership = await this.getMembership(projectId, userId);
 
-    return project;
+    return membership.project;
   }
 
   async update(
@@ -77,62 +59,58 @@ export class ProjectsService {
     userId: string,
   ) {
     // check if user is authorized to access this project
-    const projectMembership = await this.prisma.projectMembership.findFirst({
-      where: {
-        projectId,
-        userId,
-      },
-    });
-
-    if (!projectMembership) {
-      throw new NotFoundException(`Project with id ${projectId} not found`);
-    }
+    const membership = await this.getMembership(projectId, userId);
 
     // check if user is authorized to update this project
-    if (projectMembership.role !== ProjectRole.OWNER) {
-      throw new ForbiddenException(
-        `You are not authorized to update this project`,
-      );
-    }
+    this.assertOwner(membership.role);
 
     // update project
-    const updatedProject = await this.prisma.project.update({
+    return await this.prisma.project.update({
       where: {
         id: projectId,
       },
       data: updateProjectDto,
     });
-
-    return updatedProject;
   }
 
   async remove(projectId: string, userId: string) {
     // check if user is authorized to access this project
-    const projectMembership = await this.prisma.projectMembership.findFirst({
-      where: {
-        projectId,
-        userId,
-      },
-    });
-
-    if (!projectMembership) {
-      throw new NotFoundException(`Project with id ${projectId} not found`);
-    }
+    const membership = await this.getMembership(projectId, userId);
 
     // check if user is authorized to remove this project
-    if (projectMembership.role !== ProjectRole.OWNER) {
-      throw new ForbiddenException(
-        `You are not authorized to remove this project`,
-      );
-    }
+    this.assertOwner(membership.role);
 
     // remove project
-    const removedProject = await this.prisma.project.delete({
+    return await this.prisma.project.delete({
       where: {
         id: projectId,
       },
     });
+  }
 
-    return removedProject;
+  private async getMembership(projectId: string, userId: string) {
+    const membership = await this.prisma.projectMembership.findFirst({
+      where: {
+        projectId,
+        userId,
+      },
+      include: {
+        project: true,
+      },
+    });
+
+    if (!membership) {
+      throw new NotFoundException(`Project membership not found`);
+    }
+
+    return membership;
+  }
+
+  private assertOwner(role: ProjectRole) {
+    if (role !== ProjectRole.OWNER) {
+      throw new ForbiddenException(
+        `You are not authorized to perform this action`,
+      );
+    }
   }
 }
