@@ -10,6 +10,7 @@ import {
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { TransferOwnershipDto } from './dto/transfere-ownership.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
@@ -53,5 +54,18 @@ export class ProjectsController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.projectsService.remove(projectId, user.sub);
+  }
+
+  @Post(':projectId/transfer-ownership')
+  transferOwnership(
+    @Param('projectId') projectId: string,
+    @Body() transferOwnershipDto: TransferOwnershipDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectsService.transferOwnership(
+      projectId,
+      user.sub,
+      transferOwnershipDto.newOwnerId,
+    );
   }
 }

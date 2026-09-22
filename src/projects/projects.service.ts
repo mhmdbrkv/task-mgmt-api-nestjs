@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -85,6 +86,68 @@ export class ProjectsService {
       where: {
         id: projectId,
       },
+    });
+  }
+
+  async transferOwnership(
+    projectId: string,
+    ownerId: string,
+    newOwnerId: string,
+  ) {
+    if (newOwnerId === ownerId) {
+      throw new BadRequestException(
+        'New owner must be different from the current owner',
+      );
+    }
+
+    // check if user is authorized to access this project
+    const membership = await this.getMembership(projectId, ownerId);
+
+    // check if user is the owner
+    this.assertOwner(membership.role);
+
+    // check if newOwnerId is already a member of this project
+    const newOwnerMembership = await this.prisma.projectMembership.findFirst({
+      where: {
+        projectId,
+        userId: newOwnerId,
+      },
+    });
+
+    if (!newOwnerMembership) {
+      throw new BadRequestException(
+        'New owner must be a member of this project',
+      );
+    }
+
+    // transfer ownership
+    return this.prisma.$transaction(async (tx) => {
+      // update old owner role to manager
+      await tx.projectMembership.update({
+        where: {
+          id: membership.id,
+        },
+        data: {
+          role: ProjectRole.MANAGER,
+        },
+      });
+
+      // update new owner role to owner
+      await tx.projectMembership.update({
+        where: {
+          id: newOwnerMembership.id,
+        },
+        data: {
+          role: ProjectRole.OWNER,
+        },
+      });
+
+      // return updated project
+      return await tx.project.findUnique({
+        where: {
+          id: projectId,
+        },
+      });
     });
   }
 
