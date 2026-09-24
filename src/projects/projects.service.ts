@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -51,6 +52,10 @@ export class ProjectsService {
   async findOne(projectId: string, userId: string) {
     const membership = await this.getMembership(projectId, userId);
 
+    if (!membership) {
+      throw new NotFoundException('Project not found');
+    }
+
     return membership.project;
   }
 
@@ -63,7 +68,11 @@ export class ProjectsService {
     const membership = await this.getMembership(projectId, userId);
 
     // check if user is authorized to update this project
-    this.assertOwner(membership.role);
+    if (membership && !this.isOwner(membership.role)) {
+      throw new ForbiddenException(
+        'You are not authorized to update this project',
+      );
+    }
 
     // update project
     return await this.prisma.project.update({
@@ -78,9 +87,12 @@ export class ProjectsService {
     // check if user is authorized to access this project
     const membership = await this.getMembership(projectId, userId);
 
-    // check if user is authorized to remove this project
-    this.assertOwner(membership.role);
-
+    // check if user is authorized to update this project
+    if (membership && !this.isOwner(membership.role)) {
+      throw new ForbiddenException(
+        'You are not authorized to update this project',
+      );
+    }
     // remove project
     return await this.prisma.project.delete({
       where: {
@@ -103,8 +115,12 @@ export class ProjectsService {
     // check if user is authorized to access this project
     const membership = await this.getMembership(projectId, ownerId);
 
-    // check if user is the owner
-    this.assertOwner(membership.role);
+    // check if user is authorized to update this project
+    if (!membership || !this.isOwner(membership.role)) {
+      throw new ForbiddenException(
+        'You are not authorized to update this project',
+      );
+    }
 
     // check if newOwnerId is already a member of this project
     const newOwnerMembership = await this.prisma.projectMembership.findFirst({
@@ -151,6 +167,34 @@ export class ProjectsService {
     });
   }
 
+  async getProjectMembers(projectId: string, userId: string) {
+    // check if user is authorized to access this project
+    const membership = await this.getMembership(projectId, userId);
+
+    if (!membership) {
+      throw new UnauthorizedException(
+        'You are not authorized to access this project',
+      );
+    }
+
+    // return all members of the project
+    return await this.prisma.projectMembership.findMany({
+      where: {
+        projectId,
+      },
+      select: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        role: true,
+      },
+    });
+  }
+
   private async getMembership(projectId: string, userId: string) {
     const membership = await this.prisma.projectMembership.findFirst({
       where: {
@@ -163,17 +207,13 @@ export class ProjectsService {
     });
 
     if (!membership) {
-      throw new NotFoundException(`Project membership not found`);
+      return null;
     }
 
     return membership;
   }
 
-  private assertOwner(role: ProjectRole) {
-    if (role !== ProjectRole.OWNER) {
-      throw new ForbiddenException(
-        `You are not authorized to perform this action`,
-      );
-    }
+  private isOwner(role: ProjectRole) {
+    return role === ProjectRole.OWNER;
   }
 }

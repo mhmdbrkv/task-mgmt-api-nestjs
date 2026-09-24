@@ -68,4 +68,12 @@ export class ProjectsController {
       transferOwnershipDto.newOwnerId,
     );
   }
+
+  @Get(':projectId/members')
+  getProjectMembers(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectsService.getProjectMembers(projectId, user.sub);
+  }
 }
