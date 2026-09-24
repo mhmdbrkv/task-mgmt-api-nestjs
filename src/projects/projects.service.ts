@@ -207,7 +207,7 @@ export class ProjectsService {
       throw new BadRequestException('You are not a member of this project');
     }
 
-    if (membership.role === ProjectRole.MEMBER) {
+    if (membership.role !== ProjectRole.OWNER) {
       throw new ForbiddenException(
         'You are not authorized to perform this action',
       );
@@ -236,6 +236,50 @@ export class ProjectsService {
       },
       data: {
         role: ProjectRole.MANAGER,
+      },
+    });
+  }
+
+  async demoteProjectManager(
+    projectId: string,
+    userId: string,
+    memberId: string,
+  ) {
+    const membership = await this.getMembership(projectId, userId);
+
+    if (!membership) {
+      throw new BadRequestException('You are not a member of this project');
+    }
+
+    if (membership.role !== ProjectRole.OWNER) {
+      throw new ForbiddenException(
+        'You are not authorized to perform this action',
+      );
+    }
+
+    if (memberId === userId) {
+      throw new BadRequestException('You cannot demote yourself');
+    }
+
+    // check if memberId is a member of this project
+    const memberMembership = await this.getMembership(projectId, memberId);
+    if (!memberMembership) {
+      throw new BadRequestException('Member must be a member of this project');
+    }
+
+    if (memberMembership.role !== ProjectRole.MANAGER) {
+      throw new BadRequestException(
+        'Cannot demote a user who is not a manager',
+      );
+    }
+
+    // demote member
+    return this.prisma.projectMembership.update({
+      where: {
+        id: memberMembership.id,
+      },
+      data: {
+        role: ProjectRole.MEMBER,
       },
     });
   }

@@ -89,4 +89,17 @@ export class ProjectsController {
       memberId,
     );
   }
+
+  @Post(':projectId/members/:memberId/demote')
+  demoteProjectManager(
+    @Param('projectId') projectId: string,
+    @Param('memberId') memberId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectsService.demoteProjectManager(
+      projectId,
+      user.sub,
+      memberId,
+    );
+  }
 }
