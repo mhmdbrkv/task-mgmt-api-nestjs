@@ -198,41 +198,39 @@ export class ProjectsService {
   async promoteProjectMember(
     projectId: string,
     userId: string,
-    memberId: string,
+    targetUserId: string,
   ) {
-    // check if user is authorized to access this project
-    const membership = await this.getMembership(projectId, userId);
+    const ownerMembership = await this.getMembership(projectId, userId);
 
-    if (!membership) {
+    if (!ownerMembership) {
       throw new BadRequestException('You are not a member of this project');
     }
 
-    if (membership.role !== ProjectRole.OWNER) {
+    if (!this.isOwner(ownerMembership.role)) {
       throw new ForbiddenException(
         'You are not authorized to perform this action',
       );
     }
 
-    if (memberId === userId) {
+    if (targetUserId === userId) {
       throw new BadRequestException('You cannot promote yourself');
     }
 
-    // check if memberId is a member of this project
-    const memberMembership = await this.getMembership(projectId, memberId);
-    if (!memberMembership) {
-      throw new BadRequestException('Member must be a member of this project');
-    }
+    const targetMembership = await this.getMembership(projectId, targetUserId);
 
-    if (memberMembership.role !== ProjectRole.MEMBER) {
+    if (!targetMembership) {
       throw new BadRequestException(
-        'Cannot promote a user who is already a manager or owner',
+        'Target user must be a member of the project',
       );
     }
 
-    // promote member
+    if (!this.isMember(targetMembership.role)) {
+      throw new BadRequestException('Only project members can be promoted');
+    }
+
     return this.prisma.projectMembership.update({
       where: {
-        id: memberMembership.id,
+        id: targetMembership.id,
       },
       data: {
         role: ProjectRole.MANAGER,
@@ -243,40 +241,39 @@ export class ProjectsService {
   async demoteProjectManager(
     projectId: string,
     userId: string,
-    memberId: string,
+    targetUserId: string,
   ) {
-    const membership = await this.getMembership(projectId, userId);
+    const ownerMembership = await this.getMembership(projectId, userId);
 
-    if (!membership) {
+    if (!ownerMembership) {
       throw new BadRequestException('You are not a member of this project');
     }
 
-    if (membership.role !== ProjectRole.OWNER) {
+    if (!this.isOwner(ownerMembership.role)) {
       throw new ForbiddenException(
         'You are not authorized to perform this action',
       );
     }
 
-    if (memberId === userId) {
+    if (targetUserId === userId) {
       throw new BadRequestException('You cannot demote yourself');
     }
 
-    // check if memberId is a member of this project
-    const memberMembership = await this.getMembership(projectId, memberId);
-    if (!memberMembership) {
-      throw new BadRequestException('Member must be a member of this project');
-    }
+    const targetMembership = await this.getMembership(projectId, targetUserId);
 
-    if (memberMembership.role !== ProjectRole.MANAGER) {
+    if (!targetMembership) {
       throw new BadRequestException(
-        'Cannot demote a user who is not a manager',
+        'Target user must be a member of the project',
       );
     }
 
-    // demote member
+    if (!this.isManager(targetMembership.role)) {
+      throw new BadRequestException('Only project managers can be demoted');
+    }
+
     return this.prisma.projectMembership.update({
       where: {
-        id: memberMembership.id,
+        id: targetMembership.id,
       },
       data: {
         role: ProjectRole.MEMBER,
@@ -284,8 +281,8 @@ export class ProjectsService {
     });
   }
 
-  private async getMembership(projectId: string, userId: string) {
-    const membership = await this.prisma.projectMembership.findFirst({
+  private getMembership(projectId: string, userId: string) {
+    return this.prisma.projectMembership.findFirst({
       where: {
         projectId,
         userId,
@@ -294,15 +291,17 @@ export class ProjectsService {
         project: true,
       },
     });
-
-    if (!membership) {
-      return null;
-    }
-
-    return membership;
   }
 
   private isOwner(role: ProjectRole) {
     return role === ProjectRole.OWNER;
+  }
+
+  private isManager(role: ProjectRole) {
+    return role === ProjectRole.MANAGER;
+  }
+
+  private isMember(role: ProjectRole) {
+    return role === ProjectRole.MEMBER;
   }
 }
