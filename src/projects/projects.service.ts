@@ -195,6 +195,51 @@ export class ProjectsService {
     });
   }
 
+  async promoteProjectMember(
+    projectId: string,
+    userId: string,
+    memberId: string,
+  ) {
+    // check if user is authorized to access this project
+    const membership = await this.getMembership(projectId, userId);
+
+    if (!membership) {
+      throw new BadRequestException('You are not a member of this project');
+    }
+
+    if (membership.role === ProjectRole.MEMBER) {
+      throw new ForbiddenException(
+        'You are not authorized to perform this action',
+      );
+    }
+
+    if (memberId === userId) {
+      throw new BadRequestException('You cannot promote yourself');
+    }
+
+    // check if memberId is a member of this project
+    const memberMembership = await this.getMembership(projectId, memberId);
+    if (!memberMembership) {
+      throw new BadRequestException('Member must be a member of this project');
+    }
+
+    if (memberMembership.role !== ProjectRole.MEMBER) {
+      throw new BadRequestException(
+        'Cannot promote a user who is already a manager or owner',
+      );
+    }
+
+    // promote member
+    return this.prisma.projectMembership.update({
+      where: {
+        id: memberMembership.id,
+      },
+      data: {
+        role: ProjectRole.MANAGER,
+      },
+    });
+  }
+
   private async getMembership(projectId: string, userId: string) {
     const membership = await this.prisma.projectMembership.findFirst({
       where: {

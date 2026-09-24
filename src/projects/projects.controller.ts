@@ -76,4 +76,17 @@ export class ProjectsController {
   ) {
     return this.projectsService.getProjectMembers(projectId, user.sub);
   }
+
+  @Post(':projectId/members/:memberId/promote')
+  promoteProjectMember(
+    @Param('projectId') projectId: string,
+    @Param('memberId') memberId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectsService.promoteProjectMember(
+      projectId,
+      user.sub,
+      memberId,
+    );
+  }
 }
