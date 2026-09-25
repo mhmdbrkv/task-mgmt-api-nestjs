@@ -4,7 +4,11 @@ import {
   IsOptional,
   MinLength,
   MaxLength,
+  IsUUID,
+  IsDate,
+  IsDateString,
 } from 'class-validator';
+import { TaskPriority } from 'src/common/enums/task-priority.enum';
 
 export class CreateTaskDto {
   @IsString()
@@ -17,13 +21,16 @@ export class CreateTaskDto {
   @IsOptional()
   @MinLength(12)
   @MaxLength(256)
-  readonly description: string;
+  readonly description?: string;
 
-  @IsString()
-  @IsNotEmpty()
-  readonly owner_id: string;
+  @IsUUID()
+  @IsOptional()
+  readonly assigneeId?: string;
 
-  @IsString()
-  @IsNotEmpty()
-  readonly project_id: string;
+  @IsOptional()
+  readonly priority?: TaskPriority;
+
+  @IsDateString()
+  @IsOptional()
+  readonly dueDate?: string;
 }

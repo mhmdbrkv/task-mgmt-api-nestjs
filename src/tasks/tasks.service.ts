@@ -1,48 +1,136 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { Task } from './entities/task.entity';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { ProjectRole } from 'src/common/enums/project-role.enum';
 
 @Injectable()
 export class TasksService {
-  private tasks: Task[] = [];
+  constructor(private readonly prisma: PrismaService) {}
 
-  create(createTaskDto: CreateTaskDto) {
-    const task: Task = {
-      id: crypto.randomUUID(),
-      ...createTaskDto,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    this.tasks.push(task);
-    return task;
+  async create(
+    createTaskDto: CreateTaskDto,
+    projectId: string,
+    userId: string,
+  ) {
+    const projectMember = await this.prisma.projectMembership.findUnique({
+      where: {
+        userId_projectId: {
+          userId,
+          projectId,
+        },
+      },
+    });
+
+    if (!projectMember) {
+      throw new ForbiddenException('You are not a member of this project');
+    }
+
+    if (projectMember.role === ProjectRole.MEMBER) {
+      throw new ForbiddenException(
+        'You do not have permission to create tasks in this project',
+      );
+    }
+
+    if (createTaskDto.assigneeId) {
+      if (createTaskDto.assigneeId === userId) {
+        throw new BadRequestException('You cannot assign tasks to yourself');
+      }
+      const assignee = await this.prisma.projectMembership.findUnique({
+        where: {
+          userId_projectId: {
+            userId: createTaskDto.assigneeId,
+            projectId,
+          },
+        },
+      });
+
+      if (!assignee) {
+        throw new NotFoundException(
+          'The assigned user is not a member of this project',
+        );
+      }
+
+      if (
+        projectMember.role === ProjectRole.MANAGER &&
+        assignee.role !== ProjectRole.MEMBER
+      ) {
+        throw new ForbiddenException(
+          'You do not have permission to assign tasks to managers or owners',
+        );
+      }
+    }
+
+    const dueDate = createTaskDto.dueDate
+      ? new Date(createTaskDto.dueDate)
+      : undefined;
+
+    if (dueDate && dueDate < new Date()) {
+      throw new BadRequestException('Due date must be in the future');
+    }
+
+    return await this.prisma.task.create({
+      data: {
+        ...createTaskDto,
+        dueDate,
+        projectId,
+        createdById: userId,
+      },
+    });
   }
 
-  findAll() {
-    return this.tasks ?? [];
+  async findAll(projectId: string, userId: string) {
+    const projectMember = await this.prisma.projectMembership.findUnique({
+      where: {
+        userId_projectId: {
+          userId,
+          projectId,
+        },
+      },
+    });
+
+    if (!projectMember) {
+      throw new ForbiddenException('You are not a member of this project');
+    }
+
+    return this.prisma.task.findMany({
+      where: {
+        projectId,
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
   }
 
-  findOne(id: string) {
-    const task = this.tasks.find((task) => task.id === id);
-    if (!task) throw new NotFoundException(`Task #${id} not found`);
-    return task;
-  }
+  // findOne(taskId: string, userId: string) {
+  //   return;
+  // }
 
-  update(id: string, updateTaskDto: UpdateTaskDto) {
-    const task = this.findOne(id);
+  // update(id: string, updateTaskDto: UpdateTaskDto) {
+  //   return;
+  // }
 
-    if (!task) throw new NotFoundException(`Task #${id} not found`);
-
-    Object.assign(task, updateTaskDto, { updatedAt: new Date() });
-    return task;
-  }
-
-  remove(id: string) {
-    const task = this.findOne(id);
-
-    if (!task) throw new NotFoundException(`Task #${id} not found`);
-
-    this.tasks = this.tasks.filter((t) => t.id !== id);
-    return task;
-  }
+  // remove(id: string) {
+  //   return;
+  // }
 }

@@ -13,10 +13,15 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { TransferOwnershipDto } from './dto/transfere-ownership.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import { CreateTaskDto } from 'src/tasks/dto/create-task.dto';
+import { TasksService } from 'src/tasks/tasks.service';
 
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly tasksService: TasksService,
+  ) {}
 
   @Post()
   create(
@@ -69,6 +74,7 @@ export class ProjectsController {
     );
   }
 
+  // Members management
   @Get(':projectId/members')
   getProjectMembers(
     @Param('projectId') projectId: string,
@@ -101,5 +107,23 @@ export class ProjectsController {
       user.sub,
       memberId,
     );
+  }
+
+  // Tasks management
+  @Post(':projectId/tasks')
+  createTask(
+    @Param('projectId') projectId: string,
+    @Body() createTaskDto: CreateTaskDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.tasksService.create(createTaskDto, projectId, user.sub);
+  }
+
+  @Get(':projectId/tasks')
+  findAllTasks(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.tasksService.findAll(projectId, user.sub);
   }
 }
