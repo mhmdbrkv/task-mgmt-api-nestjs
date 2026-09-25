@@ -126,14 +126,14 @@ export class TasksService {
     const task = await this.prisma.task.findUnique({
       where: {
         id: taskId,
-        OR: [
-          {
-            createdById: userId,
-          },
-          {
-            assigneeId: userId,
-          },
-        ],
+        // OR: [
+        //   {
+        //     createdById: userId,
+        //   },
+        //   {
+        //     assigneeId: userId,
+        //   },
+        // ],
       },
       include: {
         creator: {
@@ -154,7 +154,7 @@ export class TasksService {
     });
 
     if (!task) {
-      throw new NotFoundException('Task not found');
+      throw new NotFoundException('Task not found ');
     }
 
     return task;
