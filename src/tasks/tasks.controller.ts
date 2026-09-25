@@ -10,6 +10,8 @@ import {
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
 @Controller('tasks')
 export class TasksController {
@@ -25,10 +27,10 @@ export class TasksController {
   //   return this.tasksService.findAll();
   // }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.tasksService.findOne(id);
-  // }
+  @Get(':taskId')
+  findOne(@Param('taskId') taskId: string, @CurrentUser() user: JwtPayload) {
+    return this.tasksService.findOne(taskId, user.sub);
+  }
 
   // @Patch(':id')
   // update(@Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto) {

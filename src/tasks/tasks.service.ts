@@ -122,9 +122,43 @@ export class TasksService {
     });
   }
 
-  // findOne(taskId: string, userId: string) {
-  //   return;
-  // }
+  async findOne(taskId: string, userId: string) {
+    const task = await this.prisma.task.findUnique({
+      where: {
+        id: taskId,
+        OR: [
+          {
+            createdById: userId,
+          },
+          {
+            assigneeId: userId,
+          },
+        ],
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    return task;
+  }
 
   // update(id: string, updateTaskDto: UpdateTaskDto) {
   //   return;
