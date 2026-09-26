@@ -32,10 +32,14 @@ export class TasksController {
     return this.tasksService.findOne(taskId, user.sub);
   }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto) {
-  //   return this.tasksService.update(id, updateTaskDto);
-  // }
+  @Patch(':taskId')
+  update(
+    @Param('taskId') taskId: string,
+    @Body() updateTaskDto: UpdateTaskDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.tasksService.update(taskId, updateTaskDto, user.sub);
+  }
 
   // @Delete(':id')
   // remove(@Param('id') id: string) {

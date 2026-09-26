@@ -19,18 +19,7 @@ export class TasksService {
     projectId: string,
     userId: string,
   ) {
-    const projectMember = await this.prisma.projectMembership.findUnique({
-      where: {
-        userId_projectId: {
-          userId,
-          projectId,
-        },
-      },
-    });
-
-    if (!projectMember) {
-      throw new ForbiddenException('You are not a member of this project');
-    }
+    const projectMember = await this.getProjectMembership(projectId, userId);
 
     if (projectMember.role === ProjectRole.MEMBER) {
       throw new ForbiddenException(
@@ -86,18 +75,7 @@ export class TasksService {
   }
 
   async findAll(projectId: string, userId: string) {
-    const projectMember = await this.prisma.projectMembership.findUnique({
-      where: {
-        userId_projectId: {
-          userId,
-          projectId,
-        },
-      },
-    });
-
-    if (!projectMember) {
-      throw new ForbiddenException('You are not a member of this project');
-    }
+    await this.getProjectMembership(projectId, userId);
 
     return this.prisma.task.findMany({
       where: {
@@ -157,14 +135,90 @@ export class TasksService {
       throw new NotFoundException('Task not found ');
     }
 
+    await this.getProjectMembership(task.projectId, userId);
+
     return task;
   }
 
-  // update(id: string, updateTaskDto: UpdateTaskDto) {
-  //   return;
-  // }
+  async update(taskId: string, updateTaskDto: UpdateTaskDto, userId: string) {
+    const task = await this.prisma.task.findUnique({
+      where: {
+        id: taskId,
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const projectMember = await this.getProjectMembership(
+      task.projectId,
+      userId,
+    );
+
+    if (projectMember.role === ProjectRole.MEMBER) {
+      throw new ForbiddenException(
+        'You do not have permission to update tasks in this project',
+      );
+    }
+
+    let dueDate: Date | null | undefined = undefined;
+    if (updateTaskDto.dueDate === null) {
+      dueDate = null;
+    } else if (updateTaskDto.dueDate) {
+      dueDate = new Date(updateTaskDto.dueDate);
+    }
+
+    if (dueDate && dueDate < new Date()) {
+      throw new BadRequestException('Due date must be in the future');
+    }
+
+    return await this.prisma.task.update({
+      where: {
+        id: taskId,
+      },
+      data: {
+        title: updateTaskDto.title,
+        description: updateTaskDto.description,
+        dueDate,
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
 
   // remove(id: string) {
   //   return;
   // }
+
+  private async getProjectMembership(projectId: string, userId: string) {
+    const projectMember = await this.prisma.projectMembership.findUnique({
+      where: {
+        userId_projectId: {
+          userId,
+          projectId,
+        },
+      },
+    });
+
+    if (!projectMember) {
+      throw new ForbiddenException('You are not a member of this project');
+    }
+
+    return projectMember;
+  }
 }

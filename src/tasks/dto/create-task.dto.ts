@@ -32,5 +32,5 @@ export class CreateTaskDto {
 
   @IsDateString()
   @IsOptional()
-  readonly dueDate?: string;
+  readonly dueDate?: string | null;
 }
