@@ -12,6 +12,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import { AssignTaskDto } from './dto/assign-task.dto';
 
 @Controller('tasks')
 export class TasksController {
@@ -39,6 +40,15 @@ export class TasksController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.tasksService.update(taskId, updateTaskDto, user.sub);
+  }
+
+  @Post(':taskId/assign')
+  assignTask(
+    @Param('taskId') taskId: string,
+    @Body() assignTaskDto: AssignTaskDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.tasksService.assignTask(taskId, assignTaskDto, user.sub);
   }
 
   // @Delete(':id')

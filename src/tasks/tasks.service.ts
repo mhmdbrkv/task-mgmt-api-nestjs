@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { AssignTaskDto } from './dto/assign-task.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProjectRole } from 'src/common/enums/project-role.enum';
 
@@ -27,10 +28,7 @@ export class TasksService {
       );
     }
 
-    if (createTaskDto.assigneeId) {
-      if (createTaskDto.assigneeId === userId) {
-        throw new BadRequestException('You cannot assign tasks to yourself');
-      }
+    if (createTaskDto.assigneeId && createTaskDto.assigneeId !== userId) {
       const assignee = await this.prisma.projectMembership.findUnique({
         where: {
           userId_projectId: {
@@ -56,9 +54,12 @@ export class TasksService {
       }
     }
 
-    const dueDate = createTaskDto.dueDate
-      ? new Date(createTaskDto.dueDate)
-      : undefined;
+    let dueDate: Date | null | undefined = undefined;
+    if (createTaskDto.dueDate === null) {
+      dueDate = null;
+    } else if (createTaskDto.dueDate) {
+      dueDate = new Date(createTaskDto.dueDate);
+    }
 
     if (dueDate && dueDate < new Date()) {
       throw new BadRequestException('Due date must be in the future');
@@ -66,7 +67,10 @@ export class TasksService {
 
     return await this.prisma.task.create({
       data: {
-        ...createTaskDto,
+        title: createTaskDto.title.trim(),
+        description: createTaskDto.description?.trim(),
+        assigneeId: createTaskDto.assigneeId,
+        priority: createTaskDto.priority,
         dueDate,
         projectId,
         createdById: userId,
@@ -181,6 +185,84 @@ export class TasksService {
         title: updateTaskDto.title,
         description: updateTaskDto.description,
         dueDate,
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
+  async assignTask(
+    taskId: string,
+    assignTaskDto: AssignTaskDto,
+    userId: string,
+  ) {
+    const task = await this.prisma.task.findUnique({
+      where: {
+        id: taskId,
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const projectMember = await this.getProjectMembership(
+      task.projectId,
+      userId,
+    );
+
+    if (projectMember.role === ProjectRole.MEMBER) {
+      throw new ForbiddenException(
+        'You do not have permission to assign tasks in this project',
+      );
+    }
+
+    if (assignTaskDto.assigneeId !== userId) {
+      const assignee = await this.prisma.projectMembership.findUnique({
+        where: {
+          userId_projectId: {
+            userId: assignTaskDto.assigneeId,
+            projectId: task.projectId,
+          },
+        },
+      });
+
+      if (!assignee) {
+        throw new NotFoundException(
+          'The assigned user is not a member of this project',
+        );
+      }
+
+      if (
+        projectMember.role === ProjectRole.MANAGER &&
+        assignee.role !== ProjectRole.MEMBER
+      ) {
+        throw new ForbiddenException(
+          'You do not have permission to assign tasks to managers or owners',
+        );
+      }
+    }
+
+    return await this.prisma.task.update({
+      where: {
+        id: taskId,
+      },
+      data: {
+        assigneeId: assignTaskDto.assigneeId,
       },
       include: {
         creator: {
