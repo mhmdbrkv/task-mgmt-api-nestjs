@@ -8,7 +8,7 @@ import {
   IsDate,
   IsDateString,
 } from 'class-validator';
-import { TaskPriority } from 'src/common/enums/task-priority.enum';
+import { TaskPriority } from 'src/common/enums/tasks.enum';
 
 export class CreateTaskDto {
   @IsString()

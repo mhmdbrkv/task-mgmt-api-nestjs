@@ -10,6 +10,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProjectRole } from 'src/common/enums/project-role.enum';
+import { TaskStatus } from 'src/common/enums/tasks.enum';
 
 @Injectable()
 export class TasksService {
@@ -263,6 +264,86 @@ export class TasksService {
       },
       data: {
         assigneeId: assignTaskDto.assigneeId,
+        status: TaskStatus.TODO,
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
+  async unassignTask(
+    taskId: string,
+    assignTaskDto: AssignTaskDto,
+    userId: string,
+  ) {
+    const task = await this.prisma.task.findUnique({
+      where: {
+        id: taskId,
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const projectMember = await this.getProjectMembership(
+      task.projectId,
+      userId,
+    );
+
+    if (projectMember.role === ProjectRole.MEMBER) {
+      throw new ForbiddenException(
+        'You do not have permission to unassign tasks in this project',
+      );
+    }
+
+    if (assignTaskDto.assigneeId !== userId) {
+      const assignee = await this.prisma.projectMembership.findUnique({
+        where: {
+          userId_projectId: {
+            userId: assignTaskDto.assigneeId,
+            projectId: task.projectId,
+          },
+        },
+      });
+
+      if (!assignee) {
+        throw new NotFoundException(
+          'The unassigned user is not a member of this project',
+        );
+      }
+
+      if (
+        projectMember.role === ProjectRole.MANAGER &&
+        assignee.role !== ProjectRole.MEMBER
+      ) {
+        throw new ForbiddenException(
+          'You do not have permission to unassign tasks from managers or owners',
+        );
+      }
+    }
+
+    return await this.prisma.task.update({
+      where: {
+        id: taskId,
+      },
+      data: {
+        assigneeId: null,
+        status: TaskStatus.TODO,
       },
       include: {
         creator: {

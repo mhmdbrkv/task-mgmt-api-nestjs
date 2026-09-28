@@ -51,6 +51,15 @@ export class TasksController {
     return this.tasksService.assignTask(taskId, assignTaskDto, user.sub);
   }
 
+  @Post(':taskId/unassign')
+  unassignTask(
+    @Param('taskId') taskId: string,
+    @Body() assignTaskDto: AssignTaskDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.tasksService.unassignTask(taskId, assignTaskDto, user.sub);
+  }
+
   // @Delete(':id')
   // remove(@Param('id') id: string) {
   //   return this.tasksService.remove(id);
