@@ -8,9 +8,10 @@ import {
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
+import { TaskPriorityDto } from './dto/task-priority.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProjectRole } from 'src/common/enums/project-role.enum';
-import { TaskStatus } from 'src/common/enums/tasks.enum';
+import { TaskStatus, TaskPriority } from 'src/common/enums/tasks.enum';
 
 @Injectable()
 export class TasksService {
@@ -364,8 +365,60 @@ export class TasksService {
     });
   }
 
+  async changeTaskPriority(
+    taskId: string,
+    taskPriorityDto: TaskPriorityDto,
+    userId: string,
+  ) {
+    const task = await this.prisma.task.findUnique({
+      where: {
+        id: taskId,
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const projectMember = await this.getProjectMembership(
+      task.projectId,
+      userId,
+    );
+
+    if (projectMember.role === ProjectRole.MEMBER) {
+      throw new ForbiddenException(
+        'You do not have permission to change task priority in this project',
+      );
+    }
+
+    return await this.prisma.task.update({
+      where: {
+        id: taskId,
+      },
+      data: {
+        priority: taskPriorityDto.priority,
+      },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
   // remove(id: string) {
-  //   return;
+  //   return;j
   // }
 
   private async getProjectMembership(projectId: string, userId: string) {
