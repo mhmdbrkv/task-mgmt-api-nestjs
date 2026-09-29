@@ -14,6 +14,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { TaskPriorityDto } from './dto/task-priority.dto';
+import { TaskStatusDto } from './dto/task-status.dto';
 
 @Controller('tasks')
 export class TasksController {
@@ -72,6 +73,15 @@ export class TasksController {
       taskPriorityDto,
       user.sub,
     );
+  }
+
+  @Patch(':taskId/status')
+  changeTaskStatus(
+    @Param('taskId') taskId: string,
+    @Body() taskStatusDto: TaskStatusDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.tasksService.changeTaskStatus(taskId, taskStatusDto, user.sub);
   }
 
   // @Delete(':id')

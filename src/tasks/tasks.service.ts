@@ -12,6 +12,7 @@ import { TaskPriorityDto } from './dto/task-priority.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ProjectRole } from 'src/common/enums/project-role.enum';
 import { TaskStatus, TaskPriority } from 'src/common/enums/tasks.enum';
+import { TaskStatusDto } from './dto/task-status.dto';
 
 @Injectable()
 export class TasksService {
@@ -413,6 +414,43 @@ export class TasksService {
             email: true,
           },
         },
+      },
+    });
+  }
+
+  async changeTaskStatus(
+    taskId: string,
+    taskStatusDto: TaskStatusDto,
+    userId: string,
+  ) {
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const projectMember = await this.getProjectMembership(
+      task.projectId,
+      userId,
+    );
+
+    if (
+      projectMember.role === ProjectRole.MEMBER &&
+      task.assigneeId !== userId
+    ) {
+      throw new ForbiddenException(
+        'You do not have permission to change this task status.',
+      );
+    }
+
+    return await this.prisma.task.update({
+      where: { id: taskId },
+      data: { status: taskStatusDto.status },
+      include: {
+        creator: { select: { id: true, name: true, email: true } },
+        assignee: { select: { id: true, name: true, email: true } },
       },
     });
   }
