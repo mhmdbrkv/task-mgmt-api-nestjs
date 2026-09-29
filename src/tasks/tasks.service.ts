@@ -445,6 +445,25 @@ export class TasksService {
       );
     }
 
+    if (
+      !task.assigneeId &&
+      (taskStatusDto.status === TaskStatus.IN_PROGRESS ||
+        taskStatusDto.status === TaskStatus.DONE)
+    ) {
+      throw new BadRequestException(
+        'Cannot change task status to IN_PROGRESS or DONE without assignee',
+      );
+    }
+
+    if (
+      task.status === TaskStatus.DONE &&
+      taskStatusDto.status === TaskStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        'Cannot change status of a completed task to cancelled',
+      );
+    }
+
     return await this.prisma.task.update({
       where: { id: taskId },
       data: { status: taskStatusDto.status },
