@@ -15,20 +15,15 @@ import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { TaskPriorityDto } from './dto/task-priority.dto';
 import { TaskStatusDto } from './dto/task-status.dto';
+import { CreateCommentDto } from 'src/comments/dto/create-comment.dto';
+import { CommentsService } from 'src/comments/comments.service';
 
 @Controller('tasks')
 export class TasksController {
-  constructor(private readonly tasksService: TasksService) {}
-
-  // @Post()
-  // create(@Body() createTaskDto: CreateTaskDto) {
-  //   return this.tasksService.create(createTaskDto);
-  // }
-
-  // @Get()
-  // findAll() {
-  //   return this.tasksService.findAll();
-  // }
+  constructor(
+    private readonly tasksService: TasksService,
+    private readonly commentsService: CommentsService,
+  ) {}
 
   @Get(':taskId')
   findOne(@Param('taskId') taskId: string, @CurrentUser() user: JwtPayload) {
@@ -88,4 +83,23 @@ export class TasksController {
   // remove(@Param('id') id: string) {
   //   return this.tasksService.remove(id);
   // }
+
+  // Comments
+
+  @Post(':taskId/comments')
+  addComment(
+    @Param('taskId') taskId: string,
+    @Body() createCommentDto: CreateCommentDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.commentsService.create(taskId, createCommentDto, user.sub);
+  }
+
+  @Get(':taskId/comments')
+  getComments(
+    @Param('taskId') taskId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.commentsService.findAll(taskId, user.sub);
+  }
 }
