@@ -15,12 +15,15 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { CreateTaskDto } from 'src/tasks/dto/create-task.dto';
 import { TasksService } from 'src/tasks/tasks.service';
+import { CreateInvitationDto } from 'src/invitations/dto/create-invitation.dto';
+import { InvitationsService } from 'src/invitations/invitations.service';
 
 @Controller('projects')
 export class ProjectsController {
   constructor(
     private readonly projectsService: ProjectsService,
     private readonly tasksService: TasksService,
+    private readonly invitationsService: InvitationsService,
   ) {}
 
   @Post()
@@ -125,5 +128,27 @@ export class ProjectsController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.tasksService.findAll(projectId, user.sub);
+  }
+
+  // Invitations management
+  @Post(':projectId/invitations')
+  inviteMember(
+    @Param('projectId') projectId: string,
+    @Body() createInvitationDto: CreateInvitationDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.invitationsService.create(
+      projectId,
+      createInvitationDto,
+      user.sub,
+    );
+  }
+
+  @Get(':projectId/invitations')
+  getProjectInvitations(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.invitationsService.getProjectInvitations(projectId, user.sub);
   }
 }

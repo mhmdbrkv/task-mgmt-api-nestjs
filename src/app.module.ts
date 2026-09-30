@@ -16,6 +16,7 @@ import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProjectsModule } from './projects/projects.module';
 import { CommentsModule } from './comments/comments.module';
+import { InvitationsModule } from './invitations/invitations.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { CommentsModule } from './comments/comments.module';
     UsersModule,
     ProjectsModule,
     CommentsModule,
+    InvitationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
