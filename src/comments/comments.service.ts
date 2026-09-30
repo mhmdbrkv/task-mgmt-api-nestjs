@@ -2,10 +2,12 @@ import {
   Injectable,
   BadRequestException,
   ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ProjectRole } from 'generated/prisma/enums';
 
 @Injectable()
 export class CommentsService {
@@ -73,16 +75,64 @@ export class CommentsService {
     return comments;
   }
 
-  async findOne(id: number) {
-    return `This action returns a #${id} comment`;
+  async update(id: string, updateCommentDto: UpdateCommentDto, userId: string) {
+    const commentExists = await this.prisma.comment.findUnique({
+      where: { id },
+    });
+
+    if (!commentExists) {
+      throw new NotFoundException(`Comment with ID ${id} not found.`);
+    }
+
+    if (commentExists.authorId !== userId) {
+      throw new ForbiddenException('You are not the author of this comment');
+    }
+
+    const comment = await this.prisma.comment.update({
+      where: { id },
+      data: {
+        content: updateCommentDto.content,
+      },
+    });
+
+    return comment;
   }
 
-  async update(id: number, updateCommentDto: UpdateCommentDto) {
-    return `This action updates a #${id} comment`;
-  }
+  async remove(id: string, userId: string) {
+    const comment = await this.prisma.comment.findUnique({
+      where: { id },
+      include: {
+        task: {
+          select: {
+            projectId: true,
+          },
+        },
+      },
+    });
 
-  async remove(id: number) {
-    return `This action removes a #${id} comment`;
+    if (!comment) {
+      throw new NotFoundException(`Comment with ID ${id} not found.`);
+    }
+
+    const projectMembership = await this.getProjectMembership(
+      comment.task.projectId,
+      userId,
+    );
+
+    const isAuthor = comment.authorId === userId;
+    const isManagerOrOwner =
+      projectMembership.role === ProjectRole.MANAGER ||
+      projectMembership.role === ProjectRole.OWNER;
+
+    if (!isAuthor && !isManagerOrOwner) {
+      throw new ForbiddenException(
+        'You are not authorized to delete this comment',
+      );
+    }
+
+    return await this.prisma.comment.delete({
+      where: { id },
+    });
   }
 
   private async getProjectMembership(projectId: string, userId: string) {
