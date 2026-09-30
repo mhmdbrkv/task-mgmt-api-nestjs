@@ -76,26 +76,25 @@ export class CommentsService {
   }
 
   async update(id: string, updateCommentDto: UpdateCommentDto, userId: string) {
-    const commentExists = await this.prisma.comment.findUnique({
+    const comment = await this.prisma.comment.findUnique({
       where: { id },
     });
 
-    if (!commentExists) {
+    if (!comment) {
       throw new NotFoundException(`Comment with ID ${id} not found.`);
     }
 
-    if (commentExists.authorId !== userId) {
+    const isAuthor = comment.authorId === userId;
+    if (!isAuthor) {
       throw new ForbiddenException('You are not the author of this comment');
     }
 
-    const comment = await this.prisma.comment.update({
+    return await this.prisma.comment.update({
       where: { id },
       data: {
         content: updateCommentDto.content,
       },
     });
-
-    return comment;
   }
 
   async remove(id: string, userId: string) {
