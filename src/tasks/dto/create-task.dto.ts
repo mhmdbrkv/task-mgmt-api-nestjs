@@ -9,7 +9,7 @@ import {
   IsDateString,
   IsEnum,
 } from 'class-validator';
-import { TaskPriority } from 'src/common/enums/tasks.enum';
+import { TaskPriority } from '../../common/enums/tasks.enum';
 import { Transform } from 'class-transformer';
 
 export class CreateTaskDto {

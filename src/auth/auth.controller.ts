@@ -20,7 +20,7 @@ import ms from 'ms';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import type { JwtPayload } from './interfaces/jwt-payload.interface';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {

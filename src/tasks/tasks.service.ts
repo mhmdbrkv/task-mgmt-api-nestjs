@@ -9,9 +9,9 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { TaskPriorityDto } from './dto/task-priority.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { ProjectRole } from 'src/common/enums/project-role.enum';
-import { TaskStatus, TaskPriority } from 'src/common/enums/tasks.enum';
+import { PrismaService } from '../prisma/prisma.service';
+import { ProjectRole } from '../common/enums/project-role.enum';
+import { TaskStatus, TaskPriority } from '../common/enums/tasks.enum';
 import { TaskStatusDto } from './dto/task-status.dto';
 
 @Injectable()
@@ -103,6 +103,9 @@ export class TasksService {
             email: true,
           },
         },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }
@@ -474,9 +477,29 @@ export class TasksService {
     });
   }
 
-  // remove(id: string) {
-  //   return;j
-  // }
+  async remove(taskId: string, userId: string) {
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      select: { id: true, projectId: true },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    const projectMember = await this.getProjectMembership(
+      task.projectId,
+      userId,
+    );
+
+    if (projectMember.role === ProjectRole.MEMBER) {
+      throw new ForbiddenException(
+        'You do not have permission to delete tasks in this project',
+      );
+    }
+
+    await this.prisma.task.delete({ where: { id: taskId } });
+  }
 
   private async getProjectMembership(projectId: string, userId: string) {
     const projectMember = await this.prisma.projectMembership.findUnique({

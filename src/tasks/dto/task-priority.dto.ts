@@ -1,4 +1,4 @@
-import { TaskPriority } from 'src/common/enums/tasks.enum';
+import { TaskPriority } from '../../common/enums/tasks.enum';
 import { IsEnum } from 'class-validator';
 
 export class TaskPriorityDto {

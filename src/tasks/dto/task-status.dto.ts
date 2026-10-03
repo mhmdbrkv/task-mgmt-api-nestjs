@@ -1,4 +1,4 @@
-import { TaskStatus } from 'src/common/enums/tasks.enum';
+import { TaskStatus } from '../../common/enums/tasks.enum';
 import { IsEnum } from 'class-validator';
 
 export class TaskStatusDto {

@@ -11,12 +11,12 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { TransferOwnershipDto } from './dto/transfere-ownership.dto';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { CreateTaskDto } from 'src/tasks/dto/create-task.dto';
-import { TasksService } from 'src/tasks/tasks.service';
-import { CreateInvitationDto } from 'src/invitations/dto/create-invitation.dto';
-import { InvitationsService } from 'src/invitations/invitations.service';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { CreateTaskDto } from '../tasks/dto/create-task.dto';
+import { TasksService } from '../tasks/tasks.service';
+import { CreateInvitationDto } from '../invitations/dto/create-invitation.dto';
+import { InvitationsService } from '../invitations/invitations.service';
 
 @Controller('projects')
 export class ProjectsController {
@@ -110,6 +110,27 @@ export class ProjectsController {
       user.sub,
       memberId,
     );
+  }
+
+  @Delete(':projectId/members/:memberId')
+  removeProjectMember(
+    @Param('projectId') projectId: string,
+    @Param('memberId') memberId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectsService.removeProjectMember(
+      projectId,
+      user.sub,
+      memberId,
+    );
+  }
+
+  @Post(':projectId/leave')
+  leaveProject(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.projectsService.leaveProject(projectId, user.sub);
   }
 
   // Tasks management

@@ -8,7 +8,7 @@ import {
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { UpdateInvitationDto } from './dto/update-invitation.dto';
 
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ProjectRole } from '../common/enums/project-role.enum';
 import { InvitationStatus } from '../common/enums/invitations.enum';
 import { Invitation } from 'generated/prisma/browser';

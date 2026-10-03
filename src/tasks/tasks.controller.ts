@@ -6,17 +6,19 @@ import {
   Patch,
   Param,
   Delete,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { AssignTaskDto } from './dto/assign-task.dto';
 import { TaskPriorityDto } from './dto/task-priority.dto';
 import { TaskStatusDto } from './dto/task-status.dto';
-import { CreateCommentDto } from 'src/comments/dto/create-comment.dto';
-import { CommentsService } from 'src/comments/comments.service';
+import { CreateCommentDto } from '../comments/dto/create-comment.dto';
+import { CommentsService } from '../comments/comments.service';
 
 @Controller('tasks')
 export class TasksController {
@@ -37,6 +39,12 @@ export class TasksController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.tasksService.update(taskId, updateTaskDto, user.sub);
+  }
+
+  @Delete(':taskId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('taskId') taskId: string, @CurrentUser() user: JwtPayload) {
+    return this.tasksService.remove(taskId, user.sub);
   }
 
   @Post(':taskId/assign')
@@ -78,11 +86,6 @@ export class TasksController {
   ) {
     return this.tasksService.changeTaskStatus(taskId, taskStatusDto, user.sub);
   }
-
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.tasksService.remove(id);
-  // }
 
   // Comments
 

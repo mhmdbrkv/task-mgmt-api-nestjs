@@ -10,8 +10,8 @@ import {
 import { InvitationsService } from './invitations.service';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { UpdateInvitationDto } from './dto/update-invitation.dto';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @Controller('invitations')
 export class InvitationsController {

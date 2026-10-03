@@ -7,8 +7,9 @@ import {
 } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { ProjectRole } from 'src/common/enums/project-role.enum';
+import { PrismaService } from '../prisma/prisma.service';
+import { ProjectRole } from '../common/enums/project-role.enum';
+import { TaskStatus } from '../common/enums/tasks.enum';
 
 @Injectable()
 export class ProjectsService {
@@ -88,7 +89,7 @@ export class ProjectsService {
     const membership = await this.getMembership(projectId, userId);
 
     // check if user is authorized to update this project
-    if (membership && !this.isOwner(membership.role)) {
+    if (!membership || !this.isOwner(membership.role)) {
       throw new ForbiddenException(
         'You are not authorized to update this project',
       );
@@ -278,6 +279,71 @@ export class ProjectsService {
       data: {
         role: ProjectRole.MEMBER,
       },
+    });
+  }
+
+  async removeProjectMember(
+    projectId: string,
+    ownerId: string,
+    targetUserId: string,
+  ) {
+    const ownerMembership = await this.getMembership(projectId, ownerId);
+    if (!ownerMembership || !this.isOwner(ownerMembership.role)) {
+      throw new ForbiddenException(
+        'Only the project owner can remove project members',
+      );
+    }
+
+    if (targetUserId === ownerId) {
+      throw new BadRequestException('The project owner cannot remove themselves');
+    }
+
+    const targetMembership = await this.getMembership(projectId, targetUserId);
+    if (!targetMembership) {
+      throw new NotFoundException('Project member not found');
+    }
+
+    if (this.isOwner(targetMembership.role)) {
+      throw new BadRequestException('The project owner cannot be removed');
+    }
+
+    await this.removeMembershipAndUnassignTasks(
+      projectId,
+      targetUserId,
+      targetMembership.id,
+    );
+  }
+
+  async leaveProject(projectId: string, userId: string) {
+    const membership = await this.getMembership(projectId, userId);
+    if (!membership) {
+      throw new NotFoundException('Project membership not found');
+    }
+
+    if (this.isOwner(membership.role)) {
+      throw new ForbiddenException(
+        'Transfer ownership or delete the project before leaving',
+      );
+    }
+
+    await this.removeMembershipAndUnassignTasks(
+      projectId,
+      userId,
+      membership.id,
+    );
+  }
+
+  private async removeMembershipAndUnassignTasks(
+    projectId: string,
+    userId: string,
+    membershipId: string,
+  ) {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.task.updateMany({
+        where: { projectId, assigneeId: userId },
+        data: { assigneeId: null, status: TaskStatus.TODO },
+      });
+      await tx.projectMembership.delete({ where: { id: membershipId } });
     });
   }
 
