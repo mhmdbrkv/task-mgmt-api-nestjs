@@ -80,7 +80,10 @@ export class ProjectsService {
       where: {
         id: projectId,
       },
-      data: updateProjectDto,
+      data: {
+        name: updateProjectDto.name,
+        description: updateProjectDto.description,
+      },
     });
   }
 
@@ -124,12 +127,8 @@ export class ProjectsService {
     }
 
     // check if newOwnerId is already a member of this project
-    const newOwnerMembership = await this.prisma.projectMembership.findFirst({
-      where: {
-        projectId,
-        userId: newOwnerId,
-      },
-    });
+
+    const newOwnerMembership = await this.getMembership(projectId, newOwnerId);
 
     if (!newOwnerMembership) {
       throw new BadRequestException(
@@ -173,7 +172,7 @@ export class ProjectsService {
     const membership = await this.getMembership(projectId, userId);
 
     if (!membership) {
-      throw new UnauthorizedException(
+      throw new ForbiddenException(
         'You are not authorized to access this project',
       );
     }
@@ -204,7 +203,7 @@ export class ProjectsService {
     const ownerMembership = await this.getMembership(projectId, userId);
 
     if (!ownerMembership) {
-      throw new BadRequestException('You are not a member of this project');
+      throw new ForbiddenException('You are not a member of this project');
     }
 
     if (!this.isOwner(ownerMembership.role)) {
@@ -220,7 +219,7 @@ export class ProjectsService {
     const targetMembership = await this.getMembership(projectId, targetUserId);
 
     if (!targetMembership) {
-      throw new BadRequestException(
+      throw new ForbiddenException(
         'Target user must be a member of the project',
       );
     }
@@ -247,7 +246,7 @@ export class ProjectsService {
     const ownerMembership = await this.getMembership(projectId, userId);
 
     if (!ownerMembership) {
-      throw new BadRequestException('You are not a member of this project');
+      throw new ForbiddenException('You are not a member of this project');
     }
 
     if (!this.isOwner(ownerMembership.role)) {
@@ -295,7 +294,9 @@ export class ProjectsService {
     }
 
     if (targetUserId === ownerId) {
-      throw new BadRequestException('The project owner cannot remove themselves');
+      throw new BadRequestException(
+        'The project owner cannot remove themselves',
+      );
     }
 
     const targetMembership = await this.getMembership(projectId, targetUserId);
@@ -347,16 +348,22 @@ export class ProjectsService {
     });
   }
 
-  private getMembership(projectId: string, userId: string) {
-    return this.prisma.projectMembership.findFirst({
+  private async getMembership(projectId: string, userId: string) {
+    const membership = await this.prisma.projectMembership.findUnique({
       where: {
-        projectId,
-        userId,
+        userId_projectId: {
+          userId,
+          projectId,
+        },
       },
       include: {
         project: true,
       },
     });
+
+    if (!membership) return null;
+
+    return membership;
   }
 
   private isOwner(role: ProjectRole) {
