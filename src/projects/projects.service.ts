@@ -42,6 +42,9 @@ export class ProjectsService {
     return await this.prisma.projectMembership.findMany({
       where: {
         userId,
+        project: {
+          is: { deletedAt: null },
+        },
       },
       select: {
         project: true,
@@ -69,7 +72,7 @@ export class ProjectsService {
     const membership = await this.getMembership(projectId, userId);
 
     // check if user is authorized to update this project
-    if (membership && !this.isOwner(membership.role)) {
+    if (!membership || !this.isOwner(membership.role)) {
       throw new ForbiddenException(
         'You are not authorized to update this project',
       );
@@ -79,6 +82,7 @@ export class ProjectsService {
     return await this.prisma.project.update({
       where: {
         id: projectId,
+        deletedAt: null,
       },
       data: {
         name: updateProjectDto.name,
@@ -97,10 +101,15 @@ export class ProjectsService {
         'You are not authorized to update this project',
       );
     }
+
     // remove project
-    return await this.prisma.project.delete({
+    return await this.prisma.project.update({
       where: {
         id: projectId,
+        deletedAt: null,
+      },
+      data: {
+        deletedAt: new Date(),
       },
     });
   }
@@ -349,21 +358,20 @@ export class ProjectsService {
   }
 
   private async getMembership(projectId: string, userId: string) {
-    const membership = await this.prisma.projectMembership.findUnique({
+    return this.prisma.projectMembership.findFirst({
       where: {
-        userId_projectId: {
-          userId,
-          projectId,
+        userId,
+        projectId,
+        project: {
+          is: {
+            deletedAt: null,
+          },
         },
       },
       include: {
         project: true,
       },
     });
-
-    if (!membership) return null;
-
-    return membership;
   }
 
   private isOwner(role: ProjectRole) {
